@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="대학생을 위한 간단한 점심 메뉴 추천 서비스" />
+    <title>오늘 뭐 먹지?</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <span class="eyebrow">LUNCH PICK</span>
+        <h1>점심 뭐 먹지?</h1>
+        <p>고민은 줄이고, 점심은 빠르게</p>
+      </header>
+
+      <form id="recommend-form" class="picker-card">
+        <fieldset>
+          <legend><span>1</span> 예산을 골라주세요</legend>
+          <div class="option-grid option-grid--three">
+            <label class="choice">
+              <input type="radio" name="budget" value="8000" checked />
+              <span>8천원 이하</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="budget" value="10000" />
+              <span>1만원 이하</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="budget" value="any" />
+              <span>상관없음</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>2</span> 음식 종류는요?</legend>
+          <div class="option-grid option-grid--five">
+            <label class="choice">
+              <input type="radio" name="category" value="한식" checked />
+              <span>한식</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="category" value="중식" />
+              <span>중식</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="category" value="일식" />
+              <span>일식</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="category" value="양식" />
+              <span>양식</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="category" value="any" />
+              <span>상관없음</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>3</span> 오늘 먹고 싶은 느낌은요?</legend>
+          <div class="option-grid option-grid--four">
+            <label class="choice">
+              <input type="radio" name="mood" value="든든하게" checked />
+              <span>든든하게</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mood" value="가볍게" />
+              <span>가볍게</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mood" value="매콤하게" />
+              <span>매콤하게</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="mood" value="any" />
+              <span>아무거나</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <button class="primary-button" type="submit">메뉴 추천받기 <span aria-hidden="true">→</span></button>
+      </form>
+
+      <section id="results" class="results" aria-live="polite" hidden>
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">TODAY'S PICKS</span>
+            <h2>이 메뉴는 어때요?</h2>
+          </div>
+          <p id="result-summary"></p>
+        </div>
+        <div id="menu-list" class="menu-list"></div>
+        <div class="result-actions">
+          <button id="select-button" class="primary-button" type="button">이걸 먹을래</button>
+          <button id="retry-button" class="secondary-button" type="button">다시 추천</button>
+        </div>
+        <p id="selection-message" class="selection-message" role="status"></p>
+      </section>
+    </main>
+
+    <footer>점심 고민은 짧게, 식사 시간은 여유롭게.</footer>
+    <script src="script.js"></script>
+  </body>
+</html>

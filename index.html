@@ -3,106 +3,209 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="대학생을 위한 간단한 점심 메뉴 추천 서비스" />
+    <meta name="description" content="위치와 취향을 반영하고 친구와 함께 고르는 점심 추천 서비스" />
     <title>오늘 뭐 먹지?</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <!-- GNB: 추천, 내 기록, 공동주문 데모를 서로 독립된 화면처럼 전환합니다. -->
+    <header class="site-header">
+      <div class="nav-shell">
+        <a class="brand" href="#recommend" aria-label="점심 추천 홈">LUNCH PICK</a>
+        <nav class="gnb" aria-label="주요 메뉴">
+          <a class="gnb-link" data-route-link="recommend" href="#recommend">메뉴 추천</a>
+          <a class="gnb-link" data-route-link="my-log" href="#my-log">내 기록</a>
+          <a class="gnb-link" data-route-link="group-order" href="#group-order">
+            같이 주문하기 <span class="nav-badge">DEMO</span>
+          </a>
+        </nav>
+      </div>
+    </header>
+
     <main class="app-shell">
-      <header class="hero">
-        <span class="eyebrow">LUNCH PICK</span>
-        <h1>점심 뭐 먹지?</h1>
-        <p>고민은 줄이고, 점심은 빠르게</p>
-      </header>
+      <!-- 추천 화면: 선택 조건과 위치 기반 음식점 추천에만 집중합니다. -->
+      <section class="app-page" data-page="recommend">
+        <header class="hero">
+          <span class="eyebrow">LUNCH PICK</span>
+          <h1>점심 뭐 먹지?</h1>
+          <p>고민은 줄이고, 점심은 빠르게</p>
+        </header>
 
-      <form id="recommend-form" class="picker-card">
-        <fieldset>
-          <legend><span>1</span> 예산을 골라주세요</legend>
-          <div class="option-grid option-grid--three">
-            <label class="choice">
-              <input type="radio" name="budget" value="8000" checked />
-              <span>8천원 이하</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="budget" value="10000" />
-              <span>1만원 이하</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="budget" value="any" />
-              <span>상관없음</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span>2</span> 음식 종류는요?</legend>
-          <div class="option-grid option-grid--five">
-            <label class="choice">
-              <input type="radio" name="category" value="한식" checked />
-              <span>한식</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="category" value="중식" />
-              <span>중식</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="category" value="일식" />
-              <span>일식</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="category" value="양식" />
-              <span>양식</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="category" value="any" />
-              <span>상관없음</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend><span>3</span> 오늘 먹고 싶은 느낌은요?</legend>
-          <div class="option-grid option-grid--four">
-            <label class="choice">
-              <input type="radio" name="mood" value="든든하게" checked />
-              <span>든든하게</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="mood" value="가볍게" />
-              <span>가볍게</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="mood" value="매콤하게" />
-              <span>매콤하게</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="mood" value="any" />
-              <span>아무거나</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <button class="primary-button" type="submit">메뉴 추천받기 <span aria-hidden="true">→</span></button>
-      </form>
-
-      <section id="results" class="results" aria-live="polite" hidden>
-        <div class="section-heading">
+        <section class="location-card" aria-labelledby="location-title">
           <div>
-            <span class="eyebrow">TODAY'S PICKS</span>
-            <h2>이 메뉴는 어때요?</h2>
+            <span class="eyebrow">NEAR ME</span>
+            <h2 id="location-title">내 주변 음식점까지 찾아볼게요</h2>
+            <p id="location-status">현재는 서울시청 기준 샘플 위치를 사용하고 있어요.</p>
           </div>
-          <p id="result-summary"></p>
-        </div>
-        <div id="menu-list" class="menu-list"></div>
-        <div class="result-actions">
-          <button id="select-button" class="primary-button" type="button">이걸 먹을래</button>
-          <button id="retry-button" class="secondary-button" type="button">다시 추천</button>
-        </div>
-        <p id="selection-message" class="selection-message" role="status"></p>
+          <button id="location-button" class="secondary-button compact-button" type="button">현재 위치 사용</button>
+        </section>
+
+        <form id="recommend-form" class="picker-card">
+          <fieldset>
+            <legend><span>1</span> 예산을 골라주세요</legend>
+            <div class="option-grid option-grid--three">
+              <label class="choice"><input type="radio" name="budget" value="8000" required /><span>8천원 이하</span></label>
+              <label class="choice"><input type="radio" name="budget" value="10000" /><span>1만원 이하</span></label>
+              <label class="choice"><input type="radio" name="budget" value="any" /><span>상관없음</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend><span>2</span> 음식 종류는요?</legend>
+            <div class="option-grid option-grid--five">
+              <label class="choice"><input type="radio" name="category" value="한식" required /><span>한식</span></label>
+              <label class="choice"><input type="radio" name="category" value="중식" /><span>중식</span></label>
+              <label class="choice"><input type="radio" name="category" value="일식" /><span>일식</span></label>
+              <label class="choice"><input type="radio" name="category" value="양식" /><span>양식</span></label>
+              <label class="choice"><input type="radio" name="category" value="any" /><span>상관없음</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend><span>3</span> 오늘 먹고 싶은 느낌은요?</legend>
+            <div class="option-grid option-grid--four">
+              <label class="choice"><input type="radio" name="mood" value="든든하게" required /><span>든든하게</span></label>
+              <label class="choice"><input type="radio" name="mood" value="가볍게" /><span>가볍게</span></label>
+              <label class="choice"><input type="radio" name="mood" value="매콤하게" /><span>매콤하게</span></label>
+              <label class="choice"><input type="radio" name="mood" value="any" /><span>아무거나</span></label>
+            </div>
+          </fieldset>
+
+          <aside id="preference-summary" class="preference-summary" aria-live="polite">아직 선택 기록이 없어요. 메뉴를 고르면 취향을 기억할게요.</aside>
+          <p id="form-validation-message" class="form-validation-message" role="status">예산, 음식 종류, 느낌을 선택해주세요.</p>
+          <button id="recommend-button" class="primary-button" type="submit" disabled>메뉴 추천받기 <span aria-hidden="true">→</span></button>
+        </form>
+
+        <section id="results" class="results" aria-live="polite" hidden>
+          <div class="section-heading">
+            <div><span class="eyebrow">TODAY'S PICKS</span><h2>이 메뉴는 어때요?</h2></div>
+            <p id="result-summary"></p>
+          </div>
+          <div id="menu-list" class="menu-list"></div>
+          <div class="result-actions">
+            <button id="select-button" class="primary-button" type="button" disabled>이걸 먹을래</button>
+            <button id="retry-button" class="secondary-button" type="button">다시 추천</button>
+          </div>
+          <p id="selection-message" class="selection-message" role="status"></p>
+
+          <!-- 위치 기반 음식점 결과는 메뉴 추천과 분리해 API 교체가 쉽도록 렌더링합니다. -->
+          <section id="restaurant-section" class="restaurant-section" aria-labelledby="restaurant-title" hidden>
+            <div class="section-heading section-heading--sub">
+              <div><span class="eyebrow">NEARBY PLACES</span><h3 id="restaurant-title">내 주변에서 먹을 곳</h3></div>
+              <p id="restaurant-source"></p>
+            </div>
+            <div id="restaurant-list" class="restaurant-list"></div>
+          </section>
+        </section>
+
+      </section>
+
+      <!-- 내 기록 화면: 최근 선택, 저장 장소 목록, 저장 장소 지도를 한곳에서 관리합니다. -->
+      <section class="app-page" data-page="my-log" hidden>
+        <header class="hero hero--compact">
+          <span class="eyebrow">MY LUNCH LOG</span>
+          <h1>나의 점심 기록</h1>
+          <p>고른 메뉴와 다시 가고 싶은 장소를 모아봐요</p>
+        </header>
+
+        <section class="history-card history-card--standalone" aria-labelledby="history-title">
+          <div class="section-heading section-heading--sub">
+            <div><span class="eyebrow">MY LUNCH LOG</span><h2 id="history-title">최근 선택 기록</h2></div>
+            <button id="clear-history-button" class="text-button" type="button">기록 지우기</button>
+          </div>
+          <div id="history-list" class="history-list"></div>
+        </section>
+
+        <!-- 저장 장소 지도는 공급자 구현과 분리되어 추후 Kakao 지도로 쉽게 교체할 수 있습니다. -->
+        <section class="map-card" aria-labelledby="map-title">
+          <div class="section-heading section-heading--sub">
+            <div>
+              <span class="eyebrow">MY LUNCH MAP</span>
+              <h2 id="map-title">저장 장소 지도</h2>
+            </div>
+            <p id="map-summary">저장 0</p>
+          </div>
+          <p id="map-status" class="map-status" role="status">OpenStreetMap을 불러오는 중이에요.</p>
+          <div id="restaurant-map" class="map-canvas" role="region" aria-label="저장 음식점 지도"></div>
+          <div class="map-legend" aria-label="지도 마커 설명">
+            <span><i class="legend-dot legend-dot--current"></i>내 위치</span>
+            <span><i class="legend-dot legend-dot--favorite"></i>저장 장소</span>
+          </div>
+          <div class="saved-place-heading">
+            <h3>저장한 장소</h3>
+            <span>이 브라우저에 저장됩니다</span>
+          </div>
+          <div id="saved-place-list" class="saved-place-list"></div>
+        </section>
+      </section>
+
+      <!-- 공동주문 화면: 로컬 저장소를 사용해 방 생성과 투표 흐름을 독립적으로 확인합니다. -->
+      <section class="app-page" data-page="group-order" hidden>
+        <header class="hero hero--compact">
+          <span class="eyebrow">ORDER TOGETHER</span>
+          <h1>같이 시킬 사람?</h1>
+          <p>방을 만들고, 링크를 공유하고, 가장 많이 고른 메뉴로 주문해요</p>
+        </header>
+
+        <aside class="demo-notice"><strong>로컬 데모</strong><span>같은 브라우저의 새 탭까지 실시간으로 동기화됩니다. 다른 기기 공유는 추후 Supabase 연결 시 활성화됩니다.</span></aside>
+
+        <section id="room-create-section" class="room-card" aria-labelledby="room-create-title">
+          <div class="section-heading">
+            <div><span class="eyebrow">NEW ROOM</span><h2 id="room-create-title">투표방 만들기</h2></div>
+            <p>후보는 최대 3개</p>
+          </div>
+          <form id="room-create-form" class="room-form">
+            <label class="input-field"><span>방 이름</span><input name="room-title" type="text" value="오늘 점심 같이 주문해요" maxlength="40" required /></label>
+            <div class="room-form-grid">
+              <label class="input-field"><span>내 닉네임</span><input name="host-name" type="text" placeholder="예: 동근" maxlength="12" required /></label>
+              <label class="input-field">
+                <span>투표 마감</span>
+                <select name="deadline-minutes">
+                  <option value="10">10분 뒤</option><option value="20" selected>20분 뒤</option><option value="30">30분 뒤</option><option value="60">1시간 뒤</option>
+                </select>
+              </label>
+            </div>
+            <div class="candidate-fields">
+              <label class="input-field"><span>후보 1</span><input name="candidate" type="text" value="김치찌개" maxlength="24" required /></label>
+              <label class="input-field"><span>후보 2</span><input name="candidate" type="text" value="돈가스" maxlength="24" required /></label>
+              <label class="input-field"><span>후보 3</span><input name="candidate" type="text" value="샌드위치" maxlength="24" required /></label>
+            </div>
+            <button class="primary-button" type="submit">투표방 만들기</button>
+          </form>
+        </section>
+
+        <section id="room-section" class="room-card" aria-live="polite" hidden>
+          <div class="room-toolbar"><button id="back-to-create-button" class="text-button" type="button">← 새 방 만들기</button><span id="room-code" class="room-code"></span></div>
+          <div class="section-heading room-heading">
+            <div><span class="eyebrow">VOTING NOW</span><h2 id="room-title"></h2></div>
+            <p id="room-deadline"></p>
+          </div>
+
+          <div id="join-panel" class="join-panel" hidden>
+            <label class="input-field"><span>참여할 닉네임</span><input id="participant-name" type="text" maxlength="12" placeholder="닉네임 입력" /></label>
+            <button id="join-button" class="secondary-button" type="button">참여하기</button>
+          </div>
+
+          <form id="vote-form" class="vote-form">
+            <div id="vote-options" class="vote-options"></div>
+            <button id="vote-button" class="primary-button" type="submit">투표하기</button>
+          </form>
+          <p id="vote-message" class="selection-message" role="status"></p>
+
+          <div class="room-members">
+            <div><strong>참여자 <span id="member-count"></span></strong><div id="member-list" class="member-list"></div></div>
+            <button id="add-demo-member-button" class="secondary-button compact-button" type="button">테스트 참여자 추가</button>
+          </div>
+
+          <div class="room-actions">
+            <button id="copy-room-link-button" class="secondary-button" type="button">링크 복사</button>
+            <button id="delete-room-button" class="danger-button" type="button">방 삭제</button>
+          </div>
+        </section>
       </section>
     </main>
 
     <footer>점심 고민은 짧게, 식사 시간은 여유롭게.</footer>
-    <script src="script.js"></script>
+    <script type="module" src="js/app.js"></script>
   </body>
 </html>

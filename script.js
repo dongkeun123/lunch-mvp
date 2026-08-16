@@ -87,14 +87,19 @@ function renderRecommendations({ scroll = true } = {}) {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  gtag("event", "recommend_click");
   lastShownNames = [];
   renderRecommendations();
 });
 
-retryButton.addEventListener("click", () => renderRecommendations({ scroll: false }));
+retryButton.addEventListener("click", () => {
+  gtag("event", "retry_click");
+  renderRecommendations({ scroll: false });
+});
 
 selectButton.addEventListener("click", () => {
   const selected = document.querySelector('input[name="selected-menu"]:checked');
   if (!selected) return;
+  gtag("event", "choose_click");
   selectionMessage.textContent = `좋아요! 오늘 점심은 ${selected.value}로 결정했어요.`;
 });

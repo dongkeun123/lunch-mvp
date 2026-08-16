@@ -8,6 +8,13 @@
 export const APP_CONFIG = Object.freeze({
   kakaoRestApiKey: "",
   restaurantSearchRadiusMeters: 3000,
+  // 공동주문 백엔드는 URL과 Publishable Key를 모두 입력하면 Supabase로 자동 전환됩니다.
+  // Publishable Key는 브라우저 공개용 키입니다. Secret/service_role 키는 절대 입력하지 마세요.
+  roomBackend: Object.freeze({
+    provider: "auto",
+    supabaseUrl: "",
+    supabasePublishableKey: "",
+  }),
   // 지도 공급자는 앱 코드와 분리되어 추후 "kakao" 어댑터로 교체할 수 있습니다.
   mapProvider: "openstreetmap",
   map: Object.freeze({

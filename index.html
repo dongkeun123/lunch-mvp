@@ -71,7 +71,6 @@
             </div>
           </fieldset>
 
-          <aside id="preference-summary" class="preference-summary" aria-live="polite">아직 선택 기록이 없어요. 메뉴를 고르면 취향을 기억할게요.</aside>
           <p id="form-validation-message" class="form-validation-message" role="status">예산, 음식 종류, 느낌을 선택해주세요.</p>
           <button id="recommend-button" class="primary-button" type="submit" disabled>메뉴 추천받기 <span aria-hidden="true">→</span></button>
         </form>
@@ -127,6 +126,7 @@
             <button id="clear-history-button" class="text-button" type="button">기록 지우기</button>
           </div>
           <div id="history-list" class="history-list"></div>
+          <p id="history-action-message" class="history-action-message" role="status"></p>
         </section>
 
         <!-- 저장 장소 지도는 공급자 구현과 분리되어 추후 Kakao 지도로 쉽게 교체할 수 있습니다. -->
@@ -217,6 +217,43 @@
         </section>
       </section>
     </main>
+
+    <!-- 기록 선택 팝업: 전체 삭제 대신 사용자가 지울 기록을 직접 고릅니다. -->
+    <dialog id="history-selection-dialog" class="app-dialog" aria-labelledby="history-selection-title">
+      <div class="dialog-panel">
+        <div class="dialog-heading">
+          <div>
+            <span class="eyebrow">EDIT LUNCH LOG</span>
+            <h2 id="history-selection-title">지울 기록을 선택해주세요</h2>
+          </div>
+          <button class="dialog-close-button" type="button" data-close-history-selection aria-label="팝업 닫기">×</button>
+        </div>
+        <p class="dialog-description">선택하지 않은 기록은 그대로 유지됩니다.</p>
+        <div class="history-delete-toolbar">
+          <label><input id="select-all-history" type="checkbox" /> 전체 선택</label>
+          <span id="selected-history-count">0개 선택</span>
+        </div>
+        <div id="history-delete-list" class="history-delete-list"></div>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" data-close-history-selection>취소</button>
+          <button id="request-history-delete-button" class="danger-button" type="button" disabled>선택한 기록 지우기</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- 최종 확인 팝업: 선택 목록을 바로 삭제하지 않고 한 번 더 확인합니다. -->
+    <dialog id="history-confirm-dialog" class="app-dialog" aria-labelledby="history-confirm-title">
+      <div class="dialog-panel dialog-panel--confirm">
+        <span class="dialog-warning-icon" aria-hidden="true">!</span>
+        <span class="eyebrow">FINAL CHECK</span>
+        <h2 id="history-confirm-title">선택한 기록을 지울까요?</h2>
+        <p><strong id="history-confirm-count">0개</strong>의 기록이 삭제되며, 삭제한 기록은 복구할 수 없습니다.</p>
+        <div class="dialog-actions">
+          <button id="cancel-history-delete-button" class="secondary-button" type="button">다시 선택</button>
+          <button id="confirm-history-delete-button" class="danger-button danger-button--filled" type="button">삭제하기</button>
+        </div>
+      </div>
+    </dialog>
 
     <footer>점심 고민은 짧게, 식사 시간은 여유롭게.</footer>
     <script type="module" src="js/app.js"></script>

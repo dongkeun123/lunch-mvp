@@ -232,15 +232,6 @@ footer { padding: 0 16px 30px; color: #99968e; text-align: center; font-size: 12
 .location-card h2 { margin: 5px 0 5px; font-size: 18px; letter-spacing: -0.025em; }
 .location-card p { margin: 0; color: var(--muted); font-size: 13px; }
 .compact-button { min-height: 42px; padding: 9px 15px; font-size: 13px; white-space: nowrap; }
-.preference-summary {
-  padding: 15px 17px;
-  border: 1px dashed #ffd2c1;
-  border-radius: 13px;
-  background: #fff9f6;
-  color: #725448;
-  font-size: 13px;
-  font-weight: 650;
-}
 .form-validation-message { margin: -6px 0 0; color: var(--muted); text-align: center; font-size: 12px; }
 .form-validation-message.is-ready { color: var(--accent-dark); font-weight: 700; }
 .history-card { margin-top: 28px; padding: 26px 30px; }
@@ -255,9 +246,46 @@ footer { padding: 0 16px 30px; color: #99968e; text-align: center; font-size: 12
 .history-item span { display: flex; align-items: baseline; gap: 8px; }
 .history-item strong { font-size: 14px; }
 .history-item small, .history-item time { color: var(--muted); font-size: 11px; }
+.history-action-message { min-height: 20px; margin: 10px 0 0; color: var(--accent-dark); font-size: 12px; font-weight: 700; text-align: right; }
 .empty-state { margin: 0; padding: 18px; border-radius: 12px; background: #f7f8fa; color: var(--muted); text-align: center; font-size: 13px; }
 .empty-state--strong { display: grid; gap: 4px; padding: 28px 18px; }
 .empty-state--strong strong { color: var(--text); font-size: 15px; }
+
+/* ---------- Selective history deletion dialogs ---------- */
+.app-dialog {
+  width: min(calc(100% - 32px), 520px);
+  max-height: min(82vh, 680px);
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text);
+  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.22);
+}
+.app-dialog::backdrop { background: rgba(28, 36, 48, 0.46); backdrop-filter: blur(3px); }
+.dialog-panel { padding: 28px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); }
+.dialog-panel--confirm { text-align: center; }
+.dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.dialog-heading h2, .dialog-panel--confirm h2 { margin: 5px 0 0; font-size: 22px; letter-spacing: -0.035em; }
+.dialog-description, .dialog-panel--confirm p { margin: 8px 0 20px; color: var(--muted); font-size: 13px; }
+.dialog-close-button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f3f4f6; color: var(--muted); font-size: 22px; line-height: 1; }
+.dialog-close-button:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.history-delete-toolbar { display: flex; margin-bottom: 10px; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; font-weight: 700; }
+.history-delete-toolbar label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+.history-delete-toolbar input, .history-delete-item input { accent-color: var(--accent); }
+.history-delete-list { display: grid; max-height: 340px; gap: 8px; overflow-y: auto; padding-right: 3px; }
+.history-delete-item { display: flex; min-height: 58px; padding: 11px 13px; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: #f9fafb; cursor: pointer; transition: border-color 0.16s, background 0.16s; }
+.history-delete-item:hover { border-color: #ffc9b5; background: #fffaf7; }
+.history-delete-item:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.history-delete-item input { width: 17px; height: 17px; flex: 0 0 auto; }
+.history-delete-copy { min-width: 0; }
+.history-delete-copy strong, .history-delete-copy small { display: block; }
+.history-delete-copy strong { font-size: 14px; }
+.history-delete-copy small { margin-top: 2px; color: var(--muted); font-size: 11px; }
+.dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+.dialog-warning-icon { display: grid; width: 44px; height: 44px; margin: 0 auto 14px; place-items: center; border-radius: 50%; background: #fff0ed; color: #b42318; font-size: 21px; font-weight: 850; }
+.danger-button--filled { border-color: #b42318; background: #b42318; color: white; }
+.danger-button--filled:hover { background: #912018; }
 
 /* ---------- Nearby restaurant results ---------- */
 .restaurant-section { margin-top: 28px; padding-top: 25px; border-top: 1px solid var(--line); }
@@ -393,4 +421,6 @@ footer { padding: 0 16px 30px; color: #99968e; text-align: center; font-size: 12
   .room-form-grid, .join-panel, .room-actions { grid-template-columns: 1fr; }
   .room-members { display: grid; }
   .room-members .compact-button { width: 100%; }
+  .dialog-panel { padding: 23px 18px; }
+  .dialog-actions { grid-template-columns: 1fr; }
 }

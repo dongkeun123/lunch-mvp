@@ -6,13 +6,12 @@ import {
   getRecommendationReason,
   isExactRecommendationMatch,
   pickMenus,
-  summarizePreferences,
 } from "./recommendation.js";
 import {
   addHistory,
-  clearHistory,
   getFavoritePlaces,
   getHistory,
+  removeHistoryEntries,
   removeFavoritePlace,
   STORAGE_KEYS,
   toggleFavoritePlace,
@@ -33,7 +32,6 @@ const selectButton = document.querySelector("#select-button");
 const retryButton = document.querySelector("#retry-button");
 const relaxSuggestion = document.querySelector("#relax-suggestion");
 const selectionMessage = document.querySelector("#selection-message");
-const preferenceSummary = document.querySelector("#preference-summary");
 const historyList = document.querySelector("#history-list");
 const restaurantSection = document.querySelector("#restaurant-section");
 const restaurantList = document.querySelector("#restaurant-list");
@@ -46,6 +44,17 @@ const mapContainer = document.querySelector("#restaurant-map");
 const mapStatus = document.querySelector("#map-status");
 const mapSummary = document.querySelector("#map-summary");
 const savedPlaceList = document.querySelector("#saved-place-list");
+const clearHistoryButton = document.querySelector("#clear-history-button");
+const historyActionMessage = document.querySelector("#history-action-message");
+const historySelectionDialog = document.querySelector("#history-selection-dialog");
+const historyDeleteList = document.querySelector("#history-delete-list");
+const selectAllHistory = document.querySelector("#select-all-history");
+const selectedHistoryCount = document.querySelector("#selected-history-count");
+const requestHistoryDeleteButton = document.querySelector("#request-history-delete-button");
+const historyConfirmDialog = document.querySelector("#history-confirm-dialog");
+const historyConfirmCount = document.querySelector("#history-confirm-count");
+const cancelHistoryDeleteButton = document.querySelector("#cancel-history-delete-button");
+const confirmHistoryDeleteButton = document.querySelector("#confirm-history-delete-button");
 
 let currentLocation = DEMO_LOCATION;
 let lastShownIds = [];
@@ -54,6 +63,7 @@ let currentPlaces = [];
 let restaurantRequestId = 0;
 let retryRequestCount = 0;
 let recommendationExpansion = { expandDistance: false, relaxConditions: false };
+let pendingHistoryDeleteIds = [];
 const mapController = new MapController();
 let mapInitializePromise = null;
 
@@ -95,7 +105,7 @@ function renderRoute() {
 /** 선택 기록과 학습된 카테고리 취향을 추천 폼 아래에 즉시 갱신합니다. */
 function renderPreferenceAndHistory() {
   const history = getHistory();
-  preferenceSummary.textContent = summarizePreferences(history);
+  clearHistoryButton.disabled = history.length === 0;
 
   if (!history.length) {
     historyList.innerHTML = '<p class="empty-state">아직 기록이 없어요. 오늘 메뉴를 선택하면 여기에 쌓여요.</p>';
@@ -104,10 +114,54 @@ function renderPreferenceAndHistory() {
 
   historyList.innerHTML = history.slice(0, 6).map((entry) => `
     <article class="history-item">
-      <span><strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(entry.category)}</small></span>
+      <span><strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(entry.category)}${entry.selectionCount > 1 ? ` · ${entry.selectionCount}회 선택` : ""}</small></span>
       <time datetime="${escapeHtml(entry.selectedAt)}">${escapeHtml(formatDateTime(entry.selectedAt))}</time>
     </article>
   `).join("");
+}
+
+/** 기록 삭제 팝업은 저장된 전체 기록을 체크 가능한 목록으로 그립니다. */
+function renderHistoryDeletionOptions() {
+  const history = getHistory();
+  historyDeleteList.innerHTML = history.map((entry) => `
+    <label class="history-delete-item">
+      <input type="checkbox" value="${escapeHtml(entry.id)}" />
+      <span class="history-delete-copy">
+        <strong>${escapeHtml(entry.name)}</strong>
+        <small>${escapeHtml(entry.category)}${entry.selectionCount > 1 ? ` · ${entry.selectionCount}회 선택` : ""} · ${escapeHtml(formatDateTime(entry.selectedAt))}</small>
+      </span>
+    </label>
+  `).join("");
+  selectAllHistory.checked = false;
+  selectAllHistory.indeterminate = false;
+  updateHistoryDeleteSelection();
+}
+
+/** 체크 개수와 전체 선택 상태를 동기화해 실수로 빈 삭제를 요청하지 않게 합니다. */
+function updateHistoryDeleteSelection() {
+  const checkboxes = [...historyDeleteList.querySelectorAll('input[type="checkbox"]')];
+  const selectedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+  selectedHistoryCount.textContent = `${selectedCount}개 선택`;
+  requestHistoryDeleteButton.disabled = selectedCount === 0;
+  selectAllHistory.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
+  selectAllHistory.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
+}
+
+function openHistorySelectionDialog() {
+  if (!getHistory().length) return;
+  historyActionMessage.textContent = "";
+  renderHistoryDeletionOptions();
+  historySelectionDialog.showModal();
+}
+
+function closeHistorySelectionDialog() {
+  if (historySelectionDialog.open) historySelectionDialog.close();
+}
+
+/** 최종 확인을 취소하면 기존 체크 상태를 유지한 채 선택 팝업으로 돌아갑니다. */
+function returnToHistorySelection() {
+  if (historyConfirmDialog.open) historyConfirmDialog.close();
+  if (getHistory().length && !historySelectionDialog.open) historySelectionDialog.showModal();
 }
 
 /** 지도에는 추천 결과와 저장 장소를 함께 전달하며 실제 지도 공급자 종류는 컨트롤러가 결정합니다. */
@@ -419,6 +473,7 @@ function syncFavoritePlaces() {
 window.addEventListener("favorite-places-updated", syncFavoritePlaces);
 window.addEventListener("storage", (event) => {
   if (event.key === STORAGE_KEYS.favorites) syncFavoritePlaces();
+  if (event.key === STORAGE_KEYS.history) renderPreferenceAndHistory();
 });
 
 /** 최종 선택 시 기록을 저장하고 다음 추천부터 학습 점수에 반영합니다. */
@@ -427,14 +482,54 @@ selectButton.addEventListener("click", () => {
   const menu = MENUS.find((item) => item.id === selected?.value);
   if (!menu) return;
   addHistory(menu);
+  historyActionMessage.textContent = "";
   selectionMessage.textContent = `좋아요! 오늘 점심은 ${menu.name}로 결정했어요. 다음 추천에 취향을 반영할게요.`;
   renderPreferenceAndHistory();
 });
 
-document.querySelector("#clear-history-button").addEventListener("click", () => {
-  if (!getHistory().length || !window.confirm("저장된 점심 선택 기록을 모두 지울까요?")) return;
-  clearHistory();
+clearHistoryButton.addEventListener("click", openHistorySelectionDialog);
+
+historyDeleteList.addEventListener("change", updateHistoryDeleteSelection);
+selectAllHistory.addEventListener("change", () => {
+  historyDeleteList.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = selectAllHistory.checked;
+  });
+  updateHistoryDeleteSelection();
+});
+
+document.querySelectorAll("[data-close-history-selection]").forEach((button) => {
+  button.addEventListener("click", closeHistorySelectionDialog);
+});
+
+requestHistoryDeleteButton.addEventListener("click", () => {
+  pendingHistoryDeleteIds = [...historyDeleteList.querySelectorAll('input[type="checkbox"]:checked')]
+    .map((checkbox) => checkbox.value);
+  if (!pendingHistoryDeleteIds.length) return;
+  historyConfirmCount.textContent = `${pendingHistoryDeleteIds.length}개`;
+  closeHistorySelectionDialog();
+  historyConfirmDialog.showModal();
+});
+
+cancelHistoryDeleteButton.addEventListener("click", returnToHistorySelection);
+historyConfirmDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  returnToHistorySelection();
+});
+
+confirmHistoryDeleteButton.addEventListener("click", () => {
+  const deletedCount = removeHistoryEntries(pendingHistoryDeleteIds);
+  pendingHistoryDeleteIds = [];
+  historyConfirmDialog.close();
   renderPreferenceAndHistory();
+  historyActionMessage.textContent = `${deletedCount}개의 선택 기록을 삭제했어요.`;
+});
+
+/** 팝업 바깥의 어두운 영역을 누르면 현재 단계를 안전하게 닫거나 이전 단계로 돌아갑니다. */
+historySelectionDialog.addEventListener("click", (event) => {
+  if (event.target === historySelectionDialog) closeHistorySelectionDialog();
+});
+historyConfirmDialog.addEventListener("click", (event) => {
+  if (event.target === historyConfirmDialog) returnToHistorySelection();
 });
 
 initVotingRoom();

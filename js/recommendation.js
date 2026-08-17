@@ -27,8 +27,12 @@ export function isExactRecommendationMatch(menu, conditions) {
 
 /** 선택 기록을 점수로 바꾸되 최근에 고른 동일 메뉴는 감점해 취향과 다양성을 함께 반영합니다. */
 function preferenceScore(menu, history) {
-  const categoryCount = history.filter((entry) => entry.category === menu.category).length;
-  const menuCount = history.filter((entry) => entry.menuId === menu.id).length;
+  const categoryCount = history
+    .filter((entry) => entry.category === menu.category)
+    .reduce((total, entry) => total + (entry.selectionCount ?? 1), 0);
+  const menuCount = history
+    .filter((entry) => entry.menuId === menu.id)
+    .reduce((total, entry) => total + (entry.selectionCount ?? 1), 0);
   const lastSameMenu = history.find((entry) => entry.menuId === menu.id);
   const recentlySelected = lastSameMenu
     ? Date.now() - new Date(lastSameMenu.selectedAt).getTime() < 1000 * 60 * 60 * 24 * 2
@@ -105,16 +109,4 @@ export function getRecommendationReason(menu, history, conditions) {
 
 function formatBudgetDifference(value) {
   return `${Math.ceil(value / 1000) * 1000}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원";
-}
-
-/** 누적 선택 기록을 사람이 읽을 수 있는 한 문장으로 요약합니다. */
-export function summarizePreferences(history) {
-  if (!history.length) return "아직 선택 기록이 없어요. 메뉴를 고르면 취향을 기억할게요.";
-
-  const categoryCounts = history.reduce((counts, entry) => {
-    counts[entry.category] = (counts[entry.category] ?? 0) + 1;
-    return counts;
-  }, {});
-  const [favoriteCategory, count] = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0];
-  return `${history.length}번의 선택을 학습했어요. 지금까지 ${favoriteCategory}을(를) ${count}번 가장 자주 골랐어요.`;
 }

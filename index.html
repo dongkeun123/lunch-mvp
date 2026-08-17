@@ -86,6 +86,19 @@
             <button id="select-button" class="primary-button" type="button" disabled>이걸 먹을래</button>
             <button id="retry-button" class="secondary-button" type="button">다시 추천</button>
           </div>
+          <!-- 재추천이 반복되면 검색 서비스처럼 범위 완화 방법을 먼저 제안합니다. -->
+          <aside id="relax-suggestion" class="relax-suggestion" aria-labelledby="relax-suggestion-title" hidden>
+            <div class="relax-suggestion-copy">
+              <span class="eyebrow">SEARCH SUGGESTION</span>
+              <strong id="relax-suggestion-title">추천 범위를 조금 넓혀볼까요?</strong>
+              <p>현재 조건을 유지하거나, 더 먼 음식점과 다른 조건의 메뉴까지 살펴볼 수 있어요.</p>
+            </div>
+            <div class="relax-suggestion-actions">
+              <button type="button" data-relax-action="distance">7km까지 넓히기</button>
+              <button type="button" data-relax-action="conditions">다른 조건도 보기</button>
+              <button type="button" data-relax-action="keep">현재 조건 유지</button>
+            </div>
+          </aside>
           <p id="selection-message" class="selection-message" role="status"></p>
 
           <!-- 위치 기반 음식점 결과는 메뉴 추천과 분리해 API 교체가 쉽도록 렌더링합니다. -->

@@ -1,8 +1,10 @@
 import { MENUS } from "./data.js";
+import { APP_CONFIG } from "./config.js";
 import { DEMO_LOCATION, requestCurrentLocation, searchRestaurantsForMenus } from "./location-service.js";
 import {
   getRecommendationConditions,
   getRecommendationReason,
+  isExactRecommendationMatch,
   pickMenus,
   summarizePreferences,
 } from "./recommendation.js";
@@ -29,6 +31,7 @@ const menuList = document.querySelector("#menu-list");
 const summary = document.querySelector("#result-summary");
 const selectButton = document.querySelector("#select-button");
 const retryButton = document.querySelector("#retry-button");
+const relaxSuggestion = document.querySelector("#relax-suggestion");
 const selectionMessage = document.querySelector("#selection-message");
 const preferenceSummary = document.querySelector("#preference-summary");
 const historyList = document.querySelector("#history-list");
@@ -49,6 +52,8 @@ let lastShownIds = [];
 let currentPicks = [];
 let currentPlaces = [];
 let restaurantRequestId = 0;
+let retryRequestCount = 0;
+let recommendationExpansion = { expandDistance: false, relaxConditions: false };
 const mapController = new MapController();
 let mapInitializePromise = null;
 
@@ -191,11 +196,15 @@ async function renderNearbyRestaurants(picks) {
   restaurantSource.textContent = "주변 음식점을 찾는 중…";
   restaurantList.innerHTML = '<p class="empty-state">추천 메뉴와 가까운 음식점을 연결하고 있어요.</p>';
 
-  const result = await searchRestaurantsForMenus(picks, currentLocation);
+  const radiusMeters = recommendationExpansion.expandDistance
+    ? APP_CONFIG.expandedRestaurantSearchRadiusMeters
+    : APP_CONFIG.restaurantSearchRadiusMeters;
+  const result = await searchRestaurantsForMenus(picks, currentLocation, { radiusMeters });
   if (requestId !== restaurantRequestId) return;
 
   const isLive = result.source === "kakao";
-  restaurantSource.textContent = isLive ? "카카오 실제 검색 결과" : "API 연결 전 샘플 데이터";
+  const radiusLabel = `${Math.round(result.radiusMeters / 1000)}km 범위`;
+  restaurantSource.textContent = `${isLive ? "카카오 실제 검색 결과" : "API 연결 전 샘플 데이터"} · ${radiusLabel}`;
   currentPlaces = result.places;
   renderRestaurantCards(currentPlaces);
   renderSavedPlaces();
@@ -230,7 +239,7 @@ function renderMenuCards(picks, conditions) {
             <span class="menu-copy">
               <strong>${escapeHtml(menu.name)}</strong>
               <small>${escapeHtml(menu.category)} · ${escapeHtml(menu.mood.join(" · "))}</small>
-              <em>${escapeHtml(getRecommendationReason(menu, history))}</em>
+              <em>${escapeHtml(getRecommendationReason(menu, history, conditions))}</em>
             </span>
             <span class="menu-price">${formatPrice(menu.price)}</span>
           </span>
@@ -238,15 +247,25 @@ function renderMenuCards(picks, conditions) {
       </div>
     `;
   }).join("");
-  summary.textContent = `${picks.length}개의 메뉴를 찾았어요`;
+  const includesAlternative = picks.some((menu) => !isExactRecommendationMatch(menu, conditions));
+  summary.textContent = `${picks.length}개의 메뉴${includesAlternative ? " · 가까운 조건 포함" : "를 찾았어요"}`;
 }
 
 /** 추천 실행은 필터 → 취향 점수 → 카드 표시 → 주변 음식점 검색 순서로 진행합니다. */
 function renderRecommendations({ scroll = true } = {}) {
   const conditions = getRecommendationConditions(form);
   const history = getHistory();
-  const picks = pickMenus({ menus: MENUS, conditions, history, lastShownIds, limit: 3 });
+  const picks = pickMenus({
+    menus: MENUS,
+    conditions,
+    history,
+    lastShownIds,
+    limit: 3,
+    minimum: 2,
+    relaxConditions: recommendationExpansion.relaxConditions,
+  });
 
+  relaxSuggestion.hidden = true;
   currentPicks = picks;
   currentPlaces = [];
   lastShownIds = picks.map((menu) => menu.id);
@@ -257,6 +276,28 @@ function renderRecommendations({ scroll = true } = {}) {
   if (picks.length) renderNearbyRestaurants(picks);
   else renderMapState();
   if (scroll) results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** 새로운 조건 검색을 시작하면 이전 재추천 횟수와 완화 선택을 함께 초기화합니다. */
+function resetRecommendationExpansion() {
+  retryRequestCount = 0;
+  recommendationExpansion = { expandDistance: false, relaxConditions: false };
+  relaxSuggestion.hidden = true;
+}
+
+/** 두 번째 재추천부터 검색 사이트의 연관 제안처럼 완화 선택지를 결과 바로 아래에 표시합니다. */
+function showRelaxationSuggestion() {
+  relaxSuggestion.hidden = false;
+  relaxSuggestion.querySelector('[data-relax-action="distance"]').classList.toggle("is-active", recommendationExpansion.expandDistance);
+  relaxSuggestion.querySelector('[data-relax-action="conditions"]').classList.toggle("is-active", recommendationExpansion.relaxConditions);
+  relaxSuggestion.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function applyRecommendationExpansion(action) {
+  if (action === "distance") recommendationExpansion.expandDistance = true;
+  if (action === "conditions") recommendationExpansion.relaxConditions = true;
+  if (action === "keep") recommendationExpansion = { expandDistance: false, relaxConditions: false };
+  renderRecommendations({ scroll: false });
 }
 
 /** 위치 권한 요청은 사용자가 버튼을 눌렀을 때만 실행하며 실패하면 샘플 위치를 계속 사용합니다. */
@@ -285,6 +326,7 @@ form.addEventListener("submit", (event) => {
   event.preventDefault();
   if (recommendButton.disabled) return;
   lastShownIds = [];
+  resetRecommendationExpansion();
   renderRecommendations();
 });
 
@@ -299,9 +341,23 @@ function updateFormReadiness() {
   formValidationMessage.classList.toggle("is-ready", ready);
 }
 
-retryButton.addEventListener("click", () => renderRecommendations({ scroll: false }));
+retryButton.addEventListener("click", () => {
+  retryRequestCount += 1;
+  if (retryRequestCount >= 2) {
+    showRelaxationSuggestion();
+    return;
+  }
+  renderRecommendations({ scroll: false });
+});
+relaxSuggestion.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-relax-action]");
+  if (button) applyRecommendationExpansion(button.dataset.relaxAction);
+});
 locationButton.addEventListener("click", activateCurrentLocation);
-form.addEventListener("change", updateFormReadiness);
+form.addEventListener("change", () => {
+  resetRecommendationExpansion();
+  updateFormReadiness();
+});
 menuList.addEventListener("change", (event) => {
   if (event.target.matches('input[name="selected-menu"]')) selectButton.disabled = false;
 });

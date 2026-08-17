@@ -27,13 +27,13 @@ export function requestCurrentLocation() {
   });
 }
 
-async function searchOneMenuWithKakao(menu, location) {
+async function searchOneMenuWithKakao(menu, location, radiusMeters) {
   const params = new URLSearchParams({
     query: `${menu.name} 음식점`,
     category_group_code: "FD6",
     x: String(location.longitude),
     y: String(location.latitude),
-    radius: String(APP_CONFIG.restaurantSearchRadiusMeters),
+    radius: String(radiusMeters),
     sort: "distance",
     size: "5",
   });
@@ -62,14 +62,21 @@ async function searchOneMenuWithKakao(menu, location) {
 }
 
 /** API 키가 없을 때도 위치·거리·링크 UI를 확인할 수 있도록 현재 좌표 주변의 샘플 매장을 만듭니다. */
-function createDemoPlaces(menus, location) {
-  const distances = [180, 430, 760];
+function createDemoPlaces(menus, location, radiusMeters) {
+  const isExpanded = radiusMeters > APP_CONFIG.restaurantSearchRadiusMeters;
+  const distances = isExpanded ? [1200, 2800, 5200] : [180, 430, 760];
   const prefixes = ["정다운", "오늘의", "동네"];
-  const offsets = [
-    { latitude: 0.0012, longitude: 0.0014 },
-    { latitude: -0.0021, longitude: 0.0028 },
-    { latitude: 0.003, longitude: -0.0024 },
-  ];
+  const offsets = isExpanded
+    ? [
+        { latitude: 0.008, longitude: 0.009 },
+        { latitude: -0.017, longitude: 0.021 },
+        { latitude: 0.033, longitude: -0.035 },
+      ]
+    : [
+        { latitude: 0.0012, longitude: 0.0014 },
+        { latitude: -0.0021, longitude: 0.0028 },
+        { latitude: 0.003, longitude: -0.0024 },
+      ];
   return menus.map((menu, index) => {
     const offset = offsets[index] ?? { latitude: 0.004, longitude: 0.001 };
     const latitude = location.latitude + offset.latitude;
@@ -91,18 +98,22 @@ function createDemoPlaces(menus, location) {
 }
 
 /** 카카오 연결 실패 시에도 추천 전체가 멈추지 않도록 샘플 데이터로 안전하게 되돌립니다. */
-export async function searchRestaurantsForMenus(menus, location = DEMO_LOCATION) {
+export async function searchRestaurantsForMenus(
+  menus,
+  location = DEMO_LOCATION,
+  { radiusMeters = APP_CONFIG.restaurantSearchRadiusMeters } = {},
+) {
   if (!APP_CONFIG.kakaoRestApiKey) {
-    return { places: createDemoPlaces(menus, location), source: "demo" };
+    return { places: createDemoPlaces(menus, location, radiusMeters), source: "demo", radiusMeters };
   }
 
   try {
-    const places = (await Promise.all(menus.map((menu) => searchOneMenuWithKakao(menu, location)))).filter(Boolean);
+    const places = (await Promise.all(menus.map((menu) => searchOneMenuWithKakao(menu, location, radiusMeters)))).filter(Boolean);
     if (!places.length) throw new Error("주변 검색 결과가 없습니다.");
-    return { places, source: "kakao" };
+    return { places, source: "kakao", radiusMeters };
   } catch (error) {
     console.warn("카카오 API 대신 샘플 음식점을 표시합니다.", error);
-    return { places: createDemoPlaces(menus, location), source: "demo-fallback" };
+    return { places: createDemoPlaces(menus, location, radiusMeters), source: "demo-fallback", radiusMeters };
   }
 }
 
